@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Image Uploader</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 40px auto; text-align: center; }
+    #dropzone { border: 3px dashed #888; padding: 40px; margin-top: 30px; cursor: pointer; border-radius: 10px; transition: 0.3s; }
+    #dropzone.hover { background-color: #f0f0f0; }
+    #output img { max-width: 100%; margin-top: 20px; }
+    .copy-btn { padding: 6px 10px; margin-top: 10px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>Secure GitHub Image Uploader</h1>
+  <div id="dropzone">Drag & drop image here or click to select</div>
+  <input type="file" id="fileInput" accept="image/*" style="display:none">
+  <div id="output"></div>
+
+  <script>
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+
+    dropzone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', () => handleFile(fileInput.files[0]));
+
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault(); dropzone.classList.add('hover');
+    });
+
+    dropzone.addEventListener('dragleave', () => {
+      dropzone.classList.remove('hover');
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault(); dropzone.classList.remove('hover');
+      const file = e.dataTransfer.files[0];
+      if (file) handleFile(file);
+    });
+
+    async function handleFile(file) {
+      if (file.size > 25 * 1024 * 1024) {
+        alert("File exceeds 25MB limit."); return;
+      }
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await res.json();
+      const output = document.getElementById('output');
+      if (res.ok) {
+        output.innerHTML = `
+          <p>Uploaded:</p>
+          <img src="${data.url}" alt="Uploaded">
+          <a href="${data.url}" target="_blank">${data.url}</a>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('${data.url}')">Copy Link</button>
+        `;
+      } else {
+        output.innerHTML = `<p style="color:red;">${data.error}</p>`;
+      }
+    }
+  </script>
+</body>
+</html>
