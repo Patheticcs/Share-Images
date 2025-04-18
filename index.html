@@ -15,6 +15,7 @@
     .preview-img { max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 5px; }
     .upload-btn { margin-top: 20px; padding: 10px 15px; background-color: #28a745; color: white; cursor: pointer; border-radius: 5px; }
     .upload-btn:hover { background-color: #218838; }
+    .error { color: red; }
   </style>
 </head>
 <body>
@@ -22,11 +23,15 @@
   <div id="dropzone">Drag & drop image here or click to select</div>
   <input type="file" id="fileInput" accept="image/*" style="display:none">
   
+  <!-- Custom Image Name Input -->
+  <input type="text" id="imageName" placeholder="Enter custom image name (without extension)" style="margin-top: 20px;">
+  <div id="nameError" class="error" style="display:none;">This name is already taken. Please choose another name.</div>
+  
   <!-- Preview Section -->
   <div id="preview"></div>
   
   <!-- Upload Button -->
-  <button id="uploadBtn" class="upload-btn" style="display:none;" onclick="uploadImage()">Upload Image</button>
+  <button id="uploadBtn" class="upload-btn" style="display:none;" onclick="checkDuplicateAndUpload()">Upload Image</button>
 
   <div id="output"></div>
 
@@ -35,6 +40,8 @@
     const fileInput = document.getElementById('fileInput');
     const previewContainer = document.getElementById('preview');
     const uploadButton = document.getElementById('uploadBtn');
+    const imageNameInput = document.getElementById('imageName');
+    const nameError = document.getElementById('nameError');
     let selectedFile = null;
 
     dropzone.addEventListener('click', () => fileInput.click());
@@ -75,15 +82,42 @@
       reader.readAsDataURL(file);
     }
 
-    async function uploadImage() {
+    // Function to check for duplicate image names
+    async function checkDuplicateAndUpload() {
+      const imageName = imageNameInput.value.trim();
+      if (!imageName) {
+        alert("Please enter an image name.");
+        return;
+      }
+
+      // GitHub repo URL to check for the file's existence in the /images/ directory
+      const repoUrl = `https://api.github.com/repos/Patheticcs/Share-Images/contents/images/${imageName}.png`;
+
+      // Check if the image with the given name already exists
+      const response = await fetch(repoUrl);
+      if (response.ok) {
+        // If the file already exists, show error
+        nameError.style.display = 'block';
+        return;
+      } else {
+        // If the file does not exist, proceed to upload
+        nameError.style.display = 'none';
+        uploadImage(imageName);
+      }
+    }
+
+    // Function to upload the image
+    async function uploadImage(imageName) {
       if (!selectedFile) {
         alert("No file selected.");
         return;
       }
 
+      // Prepare the FormData for image upload
       const formData = new FormData();
       formData.append("image", selectedFile);
 
+      // Send the request to upload the image
       const res = await fetch("/api/upload", {
         method: "POST",
         body: formData
