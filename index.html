@@ -113,14 +113,13 @@
         return;
       }
 
-      // Prepare the FormData for image upload
       const formData = new FormData();
       formData.append("image", selectedFile);
-
-      // Send the request to upload the image
-      const res = await fetch("/api/upload", {
+      
+      // Send the image to the backend for upload
+      const res = await fetch(`/api/upload?name=${imageName}`, {
         method: "POST",
-        body: formData
+        body: formData,
       });
 
       const data = await res.json();
